@@ -7,7 +7,7 @@ from tablemaker import write_test_table, write_query_table
 from graphs import create_campaign_graphs, create_scenario_graphs, create_datagramsize_graphs
 
 
-parent_folder = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+parent_folder = os.path.dirname(os.path.dirname((os.path.abspath(__file__))))
 
 # Output folder for the current execution
 commit_hash   = os.popen('git rev-parse HEAD').read().strip()[:7]
