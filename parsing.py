@@ -200,7 +200,7 @@ def parse_description_file(path) -> dict:
     stress = dict()
     stress_root = root.find('stress')
     stress['type'] = stress_root.find('type').text
-    stress['intensity'] = int(stress_root.find('num').text)
+    stress['intensity'] = float(stress_root.find('num').text)
 
     location = stress_root.find('location').text
     if location == 'LOC_BOTH':
