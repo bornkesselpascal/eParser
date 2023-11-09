@@ -13,7 +13,7 @@ def validate_test_folder(path: str) -> bool:
                                    files, False otherwise
     '''
     files_in_path = os.listdir(path)
-    return test_description_file in files_in_path and test_results_file in files_in_path
+    return test_results_file in files_in_path
 
 def check_server_data(server_folder: str, test_folder: str) -> bool:
     '''
