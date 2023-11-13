@@ -213,7 +213,9 @@ def __write_query_table(test_scenario: dict, output_path: str) -> None:
         for report in query:
             writer.writerow([report['timestamp'], report['total'], report['losses'], report['difference']])
 
-    __save_as_excel(filename, output_path)
+    # Get the number of query messages
+    if len(query) < 1048576:
+        __save_as_excel(filename, output_path)
 
 
 def __save_as_excel(csv_path: str, output_path: str, overview_file = False) -> None:
