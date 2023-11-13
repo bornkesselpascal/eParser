@@ -53,4 +53,9 @@ def format_query(query: list, duartion: float, losses: int, total: int) -> list:
             else:
                 current_report['difference'] = current_report['losses'] - new_query[idx-1]['losses']
 
+    # Reduce the length of the query
+    while len(new_query) > 5000:
+        # Remove every second element
+        new_query = new_query[::2]
+
     return new_query

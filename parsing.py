@@ -107,7 +107,13 @@ def parse_query_messages(path: str) -> list:
         return None
 
     reports = list()
+    
+    count = 0
+    for report in query_root.findall('report'):
+        count += 1
 
+        if count > 20000:
+            return None
 
     for report in query_root.findall('report'):
         # REPORT CONTENT (Total and losses are reversed in the XML file, this is a bug in TestSuite.)
