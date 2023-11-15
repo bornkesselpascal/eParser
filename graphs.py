@@ -57,7 +57,7 @@ def create_scenario_graphs(test_data: list, campaign_folder: str, processes: lis
 
     for test_scenario in test_data:
         if (test_scenario[3] is not None) and (test_scenario[3] != []):
-            scenario_subpath = os.path.join(scenario_path, f"{test_scenario[0]['metadata']['t_uid']}")
+            scenario_subpath = os.path.join(scenario_path, f"{test_scenario[0]['metadata']['t_uid']} (C {test_scenario[0]['connection']['client_ip']}) (S {test_scenario[0]['connection']['server_ip']})")
             if not os.path.exists(scenario_subpath):
                 os.makedirs(scenario_subpath)
 

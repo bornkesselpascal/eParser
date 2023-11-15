@@ -116,7 +116,7 @@ def __parse_campaign(name: str) -> None:
 # Process all campaigns in the results folder
 campaign_list = list()
 for test_campaign in os.listdir(result_folder):
-    if test_campaign.endswith('_N') or test_campaign.startswith('.'):
+    if test_campaign.endswith('_N') or test_campaign.startswith('.') or test_campaign.endswith('.7z'):
         continue
 
     print(f'Process campaign {test_campaign}? (y/n)')
