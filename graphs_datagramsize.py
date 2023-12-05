@@ -73,7 +73,7 @@ def __plot_datagramsize_diagr1(test_data: list, datagramsize: int, output_path: 
     plt.ylim(0, math.ceil(max_value / 0.78))
 
     def percent_formatter(x, _):
-        return f"{x:.0f}%"
+        return f"{x:.00000f}%"
     plt.gca().yaxis.set_major_formatter(FuncFormatter(percent_formatter))
 
     plt.tight_layout()
