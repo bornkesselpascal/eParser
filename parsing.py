@@ -32,7 +32,6 @@ def parse_result_file(path: str) -> dict:
     report = dict()
     custom_root = root.find('custom')
     report['total'] = int(custom_root.find('num_total').text)
-    report['losses'] = int(custom_root.find('num_loss').text)
     report['timer_misses'] = int(custom_root.find('num_misses').text)
 
     duration = custom_root.find('elapsed_time')
@@ -141,6 +140,41 @@ def parse_query_messages(path: str) -> list:
     return reports
 
 
+def parse_timestamp_messages(path: str) -> list:
+    '''
+    Parses the timestamp messages from the test results file and returns them as a list of dictionaries.
+    Each dictionary contains the following keys: 'sequence', 'tv_sec', 'tv_nsec'. The list is sorted by
+    sequence.
+
+            Parameters:
+                    path (str): Path to the test results file
+
+            Returns:
+                    reports (list): List of dictionaries containing the query messages
+    '''
+    xml_file = os.path.join(path, test_results_file)
+    tree = ET.parse(xml_file)
+    root = tree.getroot()
+    timestamp_root = root.find('custom').find('timestamp')
+    if timestamp_root is None:
+        return None
+
+    records = list()
+
+    for record in timestamp_root.findall('record'):
+        sequence = record.find('sequence').text
+        tv_sec = record.find('.//tv_sec').text
+        tv_nsec = record.find('.//tv_nsec').text
+
+        records.append({
+            'sequence': sequence,
+            'tv_sec': tv_sec,
+            'tv_nsec': tv_nsec
+        })
+
+    return records
+
+
 def parse_description_file(path) -> dict:
     '''
     Parses the test description file and returns the data as a dictionary. The dictionary contains
@@ -163,7 +197,6 @@ def parse_description_file(path) -> dict:
     # METADATA
     metadata = dict()
     metadata_root = root.find('metadata')
-    metadata['method'] = metadata_root.find('method').text
     metadata['t_uid'] = metadata_root.find('t_uid').text
     metadata['path'] = metadata_root.find('path').text
 
@@ -176,19 +209,19 @@ def parse_description_file(path) -> dict:
 
     # CONNECTION
     connection = dict()
-    if description['metadata']['method'] == 'CUSTOM':
-        connection_root = root.find('connection').find('custom')
-        connection['client_ip'] = connection_root.find('client_ip').text
-        connection['server_ip'] = connection_root.find('server_ip').text
-        connection['port'] = int(connection_root.find('port').text)
-        connection['cycle_time'] = int(connection_root.find('gap').text)
-        connection['datagram_size'] = int(connection_root.find('datagram').find('size').text)
+    connection_root = root.find('connection')
+    connection['type'] = connection_root.find('type').text
+    connection['client_ip'] = connection_root.find('client_ip').text
+    connection['server_ip'] = connection_root.find('server_ip').text
+    connection['port'] = int(connection_root.find('port').text)
+    connection['cycle_time'] = int(connection_root.find('cycletime').text)
+    connection['datagram_size'] = int(connection_root.find('datagram_size').text)
 
-        qos = connection_root.find('qos')
-        if qos is not None:
-            connection['qos'] = qos.text == 'true'
-        else:
-            connection['qos'] = False
+    qos = connection_root.find('qos')
+    if qos is not None:
+        connection['qos'] = qos.text == 'true'
+    else:
+        connection['qos'] = False
 
     description['connection'] = connection
 
