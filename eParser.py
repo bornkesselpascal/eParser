@@ -2,7 +2,7 @@
 
 import os
 from datetime import datetime
-from constants import output_folder, raw_folder, os_name, concurrent_execution
+from constants import output_folder, raw_folder, os_name, concurrent_execution, max_worker
 from parsing import parse_description_file, parse_result_file, parse_timestamp_messages
 from file_management import validate_test_folder, check_server_data
 from performance_evaluation import evaluate_performance
@@ -44,20 +44,27 @@ def __handle_scenario(name :str, client_path: str, server_path: str, output_path
     #   - client_timestamps: list (of dicts)
     #   - server_timestamps: list (of dicts)
 
-    processes_test = list()
-
     # Parse all test scenarios and store the data in the list
-    for test_folder in os.listdir(client_path):
-        if concurrent_execution():
+    if concurrent_execution():
+        processes_test = list()
+        processes_number = 0
+
+        for test_folder in os.listdir(client_path):
+            if processes_number >= max_worker:
+                for process in processes_test:
+                    processes_number -= 1
+                    process.join()
+
+            processes_number += 1
             process = Process(target=__handle_test, args=(test_folder, client_path, server_path, campaign_folder))
             process.start()
             processes_test.append(process)
-        else:
+    else:
+        for test_folder in os.listdir(client_path):
             __handle_test(test_folder, client_path, server_path, campaign_folder)
 
-    if concurrent_execution():
-        for process in processes_test:
-            process.join()
+    for process in processes_test:
+        process.join()
 
     print(f'Finished eParser for scenario {name}... (at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")})')
 
@@ -148,7 +155,6 @@ for test_campaign in campaign_list:
     # Get the output folder for the current campaign
     test_campaign_output = os.path.join(output_folder, test_campaign)
     
-    processes_scenario = list()
 
     # Get the test scenarios for the current campaign
     for test_scenario in os.listdir(test_campaign_client):
@@ -159,13 +165,4 @@ for test_campaign in campaign_list:
         test_scenario_client = os.path.join(test_campaign_client, test_scenario)
         test_scenario_server = os.path.join(test_campaign_server, test_scenario)
         
-        if concurrent_execution():
-            process = Process(target=__handle_scenario, args=(test_scenario, test_scenario_client, test_scenario_server, test_campaign_output))
-            process.start()
-            processes_scenario.append(process)
-        else:
-            __handle_scenario(test_scenario, test_scenario_client, test_scenario_server, test_campaign_output)
-
-    if concurrent_execution():
-        for process in processes_scenario:
-            process.join()
+        __handle_scenario(test_scenario, test_scenario_client, test_scenario_server, test_campaign_output)

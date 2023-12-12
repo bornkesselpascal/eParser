@@ -51,17 +51,15 @@ def evaluate_performance(test_data: list, output_folder: str) -> None:
 
     # Get the timestamps for each sequence number
     timestamps = list()
+    server_records = {int(record['sequence']): record for record in test_data[4]}
+
     for record_client in test_data[3]:
         client_sequence = int(record_client['sequence'])
-        for record_server in test_data[4]:
-            server_sequence = int(record_server['sequence'])
-            if client_sequence == server_sequence:
-                break
+        record_server = server_records.get(client_sequence)
 
         # Check if the sequence numbers are equal (should always be the case, except if there is packet loss)
-        if client_sequence != server_sequence:
-            print("Error: Sequence numbers are not equal! This should not happen!")
-            return
+        if record_server is None:
+            continue
         
         # Calculate the difference between the timestamps
         diff_sec = int(record_server['tv_sec']) - int(record_client['tv_sec'])

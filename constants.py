@@ -1,8 +1,8 @@
 import os
 
 # FOLDER NAMES
-output_folder = 'results/performance/output'
-raw_folder = 'results/performance/raw'
+output_folder = 'output'
+raw_folder = 'raw'
 
 # LOG NAMES
 test_description_file = 'test_description.xml'
@@ -28,3 +28,5 @@ def concurrent_execution():
         return True
     else:
         return False
+
+max_worker = 5
