@@ -1,8 +1,8 @@
 import os
 
 # FOLDER NAMES
-output_folder = 'output'
-raw_folder = 'raw'
+output_folder = 'results/performance/output'
+raw_folder = 'results/performance/raw'
 
 # LOG NAMES
 test_description_file = 'test_description.xml'

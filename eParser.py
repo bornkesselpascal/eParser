@@ -59,12 +59,13 @@ def __handle_scenario(name :str, client_path: str, server_path: str, output_path
             process = Process(target=__handle_test, args=(test_folder, client_path, server_path, campaign_folder))
             process.start()
             processes_test.append(process)
+
+        for process in processes_test:
+            process.join()
+
     else:
         for test_folder in os.listdir(client_path):
-            __handle_test(test_folder, client_path, server_path, campaign_folder)
-
-    for process in processes_test:
-        process.join()
+            __handle_test(test_folder, client_path, server_path, campaign_folder)    
 
     print(f'Finished eParser for scenario {name}... (at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")})')
 
