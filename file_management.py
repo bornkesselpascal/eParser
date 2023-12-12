@@ -1,5 +1,5 @@
 import os
-from constants import test_description_file, test_results_file
+from constants import test_results_file
 
 def validate_test_folder(path: str) -> bool:
     '''

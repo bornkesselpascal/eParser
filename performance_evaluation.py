@@ -1,9 +1,10 @@
 import os
 import xml.etree.ElementTree as ET
+from constants import create_timediff_xml
 
 def evaluate_performance(test_data: list, output_folder: str) -> None:
-    output_filename = os.path.join(output_folder, "performance.xml")
-    output_filename2 = os.path.join(output_folder, "timediffs.xml")
+    output_summary_filename = os.path.join(output_folder, "performance.xml")
+    output_timediff_filename = os.path.join(output_folder, "timediff.xml")
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
@@ -21,42 +22,28 @@ def evaluate_performance(test_data: list, output_folder: str) -> None:
         print("Error: Timestamps are not available!")
         return
 
-    # Evaluate the timestamps
+
+    # Check if there is packet loss (if the number of timestamps is not the same)
     paket_loss = True
     if(len(test_data[3]) == len(test_data[4])):
         paket_loss = False
 
-    # Get the timestamp difference for each sequence number
-    # Check if the sequence numbers are the same, a counter is not enough because numbers my be missing or they are not in order
-    # Iterate the client timestamps and get a sequence number, then iterate the server timestamps and get the same sequence number
-    # The Send and Receive timestamps are then compared and the difference is calculated
-    # The timestamps are stored as tv_sec and tv_nsec, so they have to be converted to seconds first
-    # The difference is then calculated by subtracting the Send timestamp from the Receive timestamp
-    # The difference is then stored in a list with the corresponding sequence number
-    # The list is then sorted by the sequence number
 
-    # Get the sequence numbers from the client timestamps
+
+    # Get the sequence numbers from the client and server timestamps
     client_sequence_numbers = list()
     for timestamp in test_data[3]:
         client_sequence_numbers.append(int(timestamp['sequence']))
-
-    # Get the sequence numbers from the server timestamps
     server_sequence_numbers = list()
     for timestamp in test_data[4]:
         server_sequence_numbers.append(int(timestamp['sequence']))
 
-    # Check if client and server sequence numbers are the same and in the same order
+    # Check if server sequence numbers are in the same order (the client sequence numbers are always in order)
     in_order = True
     sorted_server_sequence_numbers = sorted(server_sequence_numbers)
     if server_sequence_numbers != sorted_server_sequence_numbers:
-        print("Error: Sequence numbers are not the same or not in the same order!")
         in_order = False
 
-        # Print out only the sequence numbers that is in a different order
-        for i in range(len(server_sequence_numbers)):
-            if server_sequence_numbers[i] != sorted_server_sequence_numbers[i]:
-                print(f"Server: {server_sequence_numbers[i]}")
-                print(f"Sorted: {sorted_server_sequence_numbers[i]}")
 
     # Sort test data [3] and [4] by sequence number
     test_data[3].sort(key=lambda x: int(x['sequence']))
@@ -64,10 +51,21 @@ def evaluate_performance(test_data: list, output_folder: str) -> None:
 
     # Get the timestamps for each sequence number
     timestamps = list()
-    for i in range(len(test_data[3])):
+    for record_client in test_data[3]:
+        client_sequence = int(record_client['sequence'])
+        for record_server in test_data[4]:
+            server_sequence = int(record_server['sequence'])
+            if client_sequence == server_sequence:
+                break
+
+        # Check if the sequence numbers are equal (should always be the case, except if there is packet loss)
+        if client_sequence != server_sequence:
+            print("Error: Sequence numbers are not equal! This should not happen!")
+            return
+        
         # Calculate the difference between the timestamps
-        diff_sec = int(test_data[4][i]['tv_sec']) - int(test_data[3][i]['tv_sec'])
-        diff_nsec = int(test_data[4][i]['tv_nsec']) - int(test_data[3][i]['tv_nsec'])
+        diff_sec = int(record_server['tv_sec']) - int(record_client['tv_sec'])
+        diff_nsec = int(record_server['tv_nsec']) - int(record_client['tv_nsec'])
 
         # Check if the nanoseconds are negative
         if diff_nsec < 0:
@@ -78,47 +76,39 @@ def evaluate_performance(test_data: list, output_folder: str) -> None:
         difference = diff_sec + (diff_nsec / 1000000000)
 
         timestamps.append({
-            'sequence': int(test_data[3][i]['sequence']),
+            'sequence': client_sequence,
             'difference': difference
         })
 
-    # Calculate the average difference
-    average_difference = 0
+
+    # Calculate the Mean Latency
+    mean_latency = 0
     for timestamp in timestamps:
-        average_difference += timestamp['difference']
-    average_difference = average_difference / len(timestamps)
+        mean_latency += timestamp['difference']
+    mean_latency = mean_latency / len(timestamps)
 
     # Calculate the standard deviation
     standard_deviation = 0
     for timestamp in timestamps:
-        standard_deviation += (timestamp['difference'] - average_difference) ** 2
+        standard_deviation += (timestamp['difference'] - mean_latency) ** 2
     standard_deviation = (standard_deviation / len(timestamps)) ** 0.5
 
-    # Calculate the minimum and maximum difference
-    minimum_difference = timestamps[0]['difference']
-    maximum_difference = timestamps[0]['difference']
+    # Calculate the minimum and maximum latency
+    minimum_latency = min(timestamps, key=lambda x: x['difference'])['difference']
+    maximum_latency = max(timestamps, key=lambda x: x['difference'])['difference']
+
+    # Calculate the difference between the minimum and maximum latency
+    difference_latency = maximum_latency - minimum_latency
+
+    # Calculate the mean jitter
+    mean_jitter = 0
     for timestamp in timestamps:
-        if timestamp['difference'] < minimum_difference:
-            minimum_difference = timestamp['difference']
-        if timestamp['difference'] > maximum_difference:
-            maximum_difference = timestamp['difference']
-
-    # Calculate the minimum and maximum difference more efficiently
-    minimum_difference = min(timestamps, key=lambda x: x['difference'])['difference']
-    maximum_difference = max(timestamps, key=lambda x: x['difference'])['difference']
+        mean_jitter += abs(timestamp['difference'] - mean_latency)
+    mean_jitter = mean_jitter / len(timestamps)
 
 
-    # Calculate the difference between the minimum and maximum difference
-    difference_difference = maximum_difference - minimum_difference
 
-    # Calculate the jitter
-    jitter = 0
-    for timestamp in timestamps:
-        jitter += abs(timestamp['difference'] - average_difference)
-    jitter = jitter / len(timestamps)
-
-
-    # Create the XML file
+    # Create the summary XML file
     root = ET.Element('performance')
 
     # Basic data
@@ -137,25 +127,26 @@ def evaluate_performance(test_data: list, output_folder: str) -> None:
     xml_timestamps = ET.SubElement(root, 'timestamps')
     ET.SubElement(xml_timestamps, 'packet_loss').text = str(paket_loss)
     ET.SubElement(xml_timestamps, 'in_order').text = str(in_order)
-    ET.SubElement(xml_timestamps, 'average_difference').text = str(average_difference)
+    ET.SubElement(xml_timestamps, 'mean_latency').text = str(mean_latency)
     ET.SubElement(xml_timestamps, 'standard_deviation').text = str(standard_deviation)
-    ET.SubElement(xml_timestamps, 'minimum_difference').text = str(minimum_difference)
-    ET.SubElement(xml_timestamps, 'maximum_difference').text = str(maximum_difference)
-    ET.SubElement(xml_timestamps, 'difference_difference').text = str(difference_difference)
-    ET.SubElement(xml_timestamps, 'jitter').text = str(jitter)
+    ET.SubElement(xml_timestamps, 'minimum_latency').text = str(minimum_latency)
+    ET.SubElement(xml_timestamps, 'maximum_latency').text = str(maximum_latency)
+    ET.SubElement(xml_timestamps, 'difference_latency').text = str(difference_latency)
+    ET.SubElement(xml_timestamps, 'mean_jitter').text = str(mean_jitter)
 
     # Write the formatted XML file to disk
     tree = ET.ElementTree(root)
     indent(tree.getroot()) # this I add
-    tree.write(output_filename, encoding='utf-8', xml_declaration=True)
+    tree.write(output_summary_filename, encoding='utf-8', xml_declaration=True)
 
     # Delete the xml tree and structure from memory
     del tree
     del root
 
-    #  Write timestamps to XML file
-    #  Create the XML file only if output_folder contains the string 'ihwk_1', 'ihwk_2' or 'ihwk_3', otherwise the file is not needed
-    if 'ihwk_1' in output_folder or 'ihwk_2' in output_folder or 'ihwk_3' in output_folder:
+
+
+    #  Create the timediff XML file
+    if create_timediff_xml:
         root = ET.Element('timestamps')
 
         for timestamp in timestamps:
@@ -166,7 +157,7 @@ def evaluate_performance(test_data: list, output_folder: str) -> None:
         # Write the formatted XML file to disk
         tree = ET.ElementTree(root)
         indent(tree.getroot()) # this I add
-        tree.write(output_filename2, encoding='utf-8', xml_declaration=True)
+        tree.write(output_timediff_filename, encoding='utf-8', xml_declaration=True)
 
         del tree
         del root

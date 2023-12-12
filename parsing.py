@@ -85,61 +85,6 @@ def parse_result_file(path: str) -> dict:
 
     return results
 
-
-def parse_query_messages(path: str) -> list:
-    '''
-    Parses the query messages from the test results file and returns them as a list of dictionaries.
-    Each dictionary contains the following keys: 'losses', 'total', 'timestamp', 'difference'. The
-    list is sorted by timestamp.
-
-            Parameters:
-                    path (str): Path to the test results file
-
-            Returns:
-                    reports (list): List of dictionaries containing the query messages
-    '''
-    xml_file = os.path.join(path, test_results_file)
-    tree = ET.parse(xml_file)
-    root = tree.getroot()
-    query_root = root.find('custom').find('query')
-    if query_root is None:
-        return None
-
-    reports = list()
-    
-    count = 0
-    for report in query_root.findall('report'):
-        count += 1
-
-        if count > 20000:
-            return None
-
-    for report in query_root.findall('report'):
-        # REPORT CONTENT (Total and losses are reversed in the XML file, this is a bug in TestSuite.)
-        losses = int(report.find('total').text)
-        total = int(report.find('misses').text)
-        timestamp = report.find('timestamp')
-        if timestamp is not None:
-            timestamp = float(timestamp.text)
-        else:
-            timestamp = -1   # no value present
-
-        # DIFFERENCE
-        if reports:
-            difference = losses - reports[-1]['losses']
-        else:
-            difference = losses
-
-        reports.append({
-            'losses': losses,
-            'total': total,
-            'timestamp': timestamp,
-            'difference': difference
-        })
-
-    return reports
-
-
 def parse_timestamp_messages(path: str) -> list:
     '''
     Parses the timestamp messages from the test results file and returns them as a list of dictionaries.

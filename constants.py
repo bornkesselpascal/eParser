@@ -2,37 +2,14 @@ import os
 
 # FOLDER NAMES
 output_folder = 'results/performance/output'
-results_folder = 'results/performance/raw'
+raw_folder = 'results/performance/raw'
 
 # LOG NAMES
 test_description_file = 'test_description.xml'
 test_results_file = 'test_results.xml'
 
-# TABLE OPTIONS
-tables = {
-    'generate' : True,
-    'excel' : {
-        'generate' : True,
-        'font_name' : 'Arial',
-        'monospace_font_name' : 'Consolas',
-    }
-}
-
-# DIAGRAM OPTIONS
-diagrams = {
-    'generate' : True,
-    'histogram' : False,
-
-    'colors' : {'datagramsize': {80: 'lightgray', 8900: 'steelblue', 65000: '#9fcc9f',},
-                'location': {'CLIENT': 'lightgray', 'SERVER': 'steelblue', 'BOTH': '#9fcc9f',},
-                'paket_type': {'sent': 'lightgray', 'received': 'steelblue',},},
-
-    'output' : {
-        'pdf': True,
-        'latex' : False,
-        'png' : True,
-    },
-}
+# XML OUTPUT OPTIONS
+create_timediff_xml = False
 
 # EXECUTION OPTIONS
 def os_name():
